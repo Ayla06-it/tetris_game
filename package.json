@@ -1,0 +1,13 @@
+{
+  "name": "tetris-game",
+  "version": "1.0.0",
+  "description": "Modern HTML5 Tetris game with SRS wall kicks, 7-bag randomizer, ghost piece, and Web Audio SFX",
+  "main": "server.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "keywords": ["tetris", "game", "html5", "canvas"],
+  "author": "",
+  "license": "MIT"
+}

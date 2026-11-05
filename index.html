@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="A modern, responsive HTML5 Canvas Tetris game featuring standard SRS kicks, 7-bag randomizer, ghost piece, and Web Audio SFX.">
+  <title>Tetris - Modern HTML5 Arcade</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header Bar -->
+  <header>
+    <div class="logo-container">
+      <h1 class="game-title">TETRIS</h1>
+      <span class="title-badge">PRO</span>
+    </div>
+    <div class="header-actions">
+      <button id="pauseBtn" class="icon-btn" aria-label="Pause Game" title="Pause (P or Esc)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6" y="4" width="4" height="16"></rect>
+          <rect x="14" y="4" width="4" height="16"></rect>
+        </svg>
+      </button>
+      <button id="muteBtn" class="icon-btn" aria-label="Mute Sound" title="Toggle Sound">
+        <!-- Icon dynamically injected by JS -->
+      </button>
+      <button id="helpBtn" class="icon-btn" aria-label="How to Play" title="Controls and Rules">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Game Layout Grid -->
+  <main class="game-layout">
+    <!-- Left Column: Hold & Statistics -->
+    <aside class="side-panel left-panel">
+      <!-- Hold Piece Card -->
+      <section class="panel-card hold-card">
+        <h2 class="panel-title">HOLD</h2>
+        <div class="mini-canvas-container">
+          <canvas id="holdCanvas" width="120" height="100"></canvas>
+        </div>
+      </section>
+
+      <!-- Stats Card -->
+      <section class="panel-card stats-card">
+        <div class="stat-box">
+          <span class="stat-label">Score</span>
+          <span id="scoreVal" class="stat-value">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">High Score</span>
+          <span id="highScoreVal" class="stat-value highlight-gold">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Level</span>
+          <span id="levelVal" class="stat-value">1</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Lines</span>
+          <span id="linesVal" class="stat-value">0</span>
+        </div>
+      </section>
+    </aside>
+
+    <!-- Center Column: Primary Game Board -->
+    <section class="board-column">
+      <div class="board-container">
+        <canvas id="boardCanvas" width="300" height="600"></canvas>
+
+        <!-- Start Overlay -->
+        <div id="startOverlay" class="start-overlay">
+          <h2 class="start-title">READY?</h2>
+          <button id="startBtn" class="primary-btn">PLAY</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Next Queue & Key Guide -->
+    <aside class="side-panel right-panel">
+      <!-- Next Pieces Card -->
+      <section class="panel-card next-card">
+        <h2 class="panel-title">NEXT</h2>
+        <div class="mini-canvas-container">
+          <canvas id="nextCanvas" width="120" height="260"></canvas>
+        </div>
+      </section>
+
+      <!-- Key Quick Guide Card -->
+      <section class="panel-card guide-card">
+        <h2 class="panel-title">CONTROLS</h2>
+        <div class="key-hints">
+          <div class="key-row"><span>Move</span><span class="kbd">← →</span></div>
+          <div class="key-row"><span>Soft Drop</span><span class="kbd">↓</span></div>
+          <div class="key-row"><span>Hard Drop</span><span class="kbd">Space</span></div>
+          <div class="key-row"><span>Rotate CW</span><span class="kbd">↑ / X</span></div>
+          <div class="key-row"><span>Rotate CCW</span><span class="kbd">Z</span></div>
+          <div class="key-row"><span>Hold</span><span class="kbd">C / Shift</span></div>
+          <div class="key-row"><span>Pause</span><span class="kbd">P / Esc</span></div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <!-- On-Screen Touch / Mobile Controls Pad -->
+  <nav class="touch-controls" aria-label="Touch Game Controls">
+    <div class="touch-cluster">
+      <!-- D-Pad Directional Movement -->
+      <div class="dpad">
+        <button id="btnRotateCW" class="dpad-btn dpad-up" aria-label="Rotate Clockwise">↻</button>
+        <button id="btnLeft" class="dpad-btn dpad-left" aria-label="Move Left">◀</button>
+        <button id="btnDown" class="dpad-btn dpad-down" aria-label="Soft Drop">▼</button>
+        <button id="btnRight" class="dpad-btn dpad-right" aria-label="Move Right">▶</button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-cluster">
+        <button id="btnHold" class="action-btn" aria-label="Hold Piece">HOLD</button>
+        <button id="btnRotateCCW" class="action-btn" aria-label="Rotate Counter Clockwise">↺</button>
+        <button id="btnHardDrop" class="action-btn btn-hard" aria-label="Hard Drop">DROP</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Pause Dialog Modal -->
+  <dialog id="pauseDialog" aria-labelledby="pauseTitle">
+    <div class="modal-content">
+      <h2 id="pauseTitle" class="modal-title">GAME PAUSED</h2>
+      <p>Take a breath! Press Resume or P to jump back into action.</p>
+      <form method="dialog">
+        <button id="resumeBtn" class="primary-btn" value="resume" autofocus>RESUME</button>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Game Over Dialog Modal -->
+  <dialog id="gameOverDialog" aria-labelledby="gameOverTitle">
+    <div class="modal-content">
+      <h2 id="gameOverTitle" class="modal-title" style="color: #ff2050;">GAME OVER</h2>
+      <div class="modal-stats">
+        <div class="stat-box">
+          <span class="stat-label">Final Score</span>
+          <span id="finalScoreVal" class="stat-value highlight-gold">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Lines Cleared</span>
+          <span id="finalLinesVal" class="stat-value">0</span>
+        </div>
+      </div>
+      <form method="dialog">
+        <button id="retryBtn" class="primary-btn" value="retry" autofocus>PLAY AGAIN</button>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Help & Rules Dialog Modal -->
+  <dialog id="helpDialog" aria-labelledby="helpTitle">
+    <div class="modal-content">
+      <h2 id="helpTitle" class="modal-title">HOW TO PLAY</h2>
+      <div class="help-list">
+        <p><strong>Goal:</strong> Rotate and move falling blocks to fill complete horizontal lines. Full lines disappear and award points.</p>
+        <br>
+        <p><strong>Special Features:</strong></p>
+        <ul>
+          <li><strong>Ghost Piece:</strong> Shows where the piece will land.</li>
+          <li><strong>Super Rotation System (SRS):</strong> Wall kicks allow rotating against walls and obstacles.</li>
+          <li><strong>Hold Queue:</strong> Press <span class="kbd">C</span> or <span class="kbd">Shift</span> to swap and save a piece for later.</li>
+          <li><strong>Hard Drop:</strong> Press <span class="kbd">Space</span> to instantly drop and lock.</li>
+          <li><strong>Tetris Bonus:</strong> Clearing 4 lines at once awards massive bonus points!</li>
+        </ul>
+      </div>
+      <form method="dialog">
+        <button id="closeHelpBtn" class="primary-btn" value="close" autofocus>GOT IT</button>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Main Game Script (Runs seamlessly on file:/// and http://) -->
+  <script src="tetris.js"></script>
+</body>
+</html>
